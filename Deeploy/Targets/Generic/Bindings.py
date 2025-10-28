@@ -246,7 +246,19 @@ BasiciRMSNormBinding = NodeBinding(
     LayerNormChecker([PointerClass(int8_t), PointerClass(int32_t)], [PointerClass(int8_t)]),
     iRMSNormTemplate.referenceTemplate, BasicTransformer)
 
-DummyBinding = NodeBinding(DummyChecker([PointerClass(int8_t)], [PointerClass(int8_t)]),
+"""
+BasicAddBindings = [
+    NodeBinding(AddChecker([PointerClass(type1), PointerClass(type2)], [PointerClass(int32_t)]),
+                AddTemplate.referenceTemplate, BasicTransformer)
+    for type1 in IntegerDataTypes
+    for type2 in IntegerDataTypes
+] + [
+    NodeBinding(AddChecker([PointerClass(float32_t), PointerClass(float32_t)], [PointerClass(float32_t)]),
+                FloatAddTemplate.referenceTemplate, BasicTransformer)
+]
+"""
+#modifica
+DummyBinding = NodeBinding(DummyChecker([PointerClass(float32_t),PointerClass(float32_t)], [PointerClass(float32_t),PointerClass(float32_t)]),
                            DummyTemplate.referenceTemplate, BasicTransformer)
 
 BasicConcatBindings = [

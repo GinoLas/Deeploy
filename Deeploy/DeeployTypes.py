@@ -1348,11 +1348,15 @@ class NodeTypeChecker():
         """
         retCheck = True
 
-        log.info("Input types %s",self.input_types)
+        log.info("Checking inputs for node %s ...",node.name)
+
+        log.info("Input types %s",node.inputs)
 
 
         for inputNode, _type in zip(node.inputs, self.input_types):
             reference = ctxt.lookup(inputNode.name)
+
+            log.info("Found buffer %s",reference)
 
             if not isinstance(reference, VariableBuffer):
                 return False

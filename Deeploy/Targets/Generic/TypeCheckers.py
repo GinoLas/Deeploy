@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from Deeploy.Logging import DEFAULT_LOGGER as log
+
 from typing import List, Optional, Sequence, Type
 
 import numpy as np
@@ -92,6 +94,8 @@ class AddChecker(SignPropTypeChecker):
 
     def _inferNumLevels(self, inputs: List[VariableBuffer],
                         operatorRepresentation: OperatorRepresentation) -> List[int]:
+        log.info("Inputs -> %s",inputs)
+        log.info("Ciao ----> inputs[0].nLevels = %s, inputs[1].nLevels = %s ",inputs[0].nLevels,inputs[1].nLevels)
         return [inputs[0].nLevels + inputs[1].nLevels]
 
     def _inferSignedness(self, inputs: List[VariableBuffer],
@@ -486,8 +490,26 @@ class RequantShiftChecker(SignPropTypeChecker):
     def _inferSignedness(self, inputs: List[VariableBuffer],
                          operatorRepresentation: OperatorRepresentation) -> List[bool]:
         return [operatorRepresentation["signed"]]
+    
+"""
+class AddChecker(SignPropTypeChecker):
 
+    def __init__(self, input_types: Sequence[Type[Pointer]], output_types: Sequence[Type[Pointer]]):
+        super().__init__(input_types, output_types)
 
+    def _inferNumLevels(self, inputs: List[VariableBuffer],
+                        operatorRepresentation: OperatorRepresentation) -> List[int]:
+        return [inputs[0].nLevels + inputs[1].nLevels]
+
+    def _inferSignedness(self, inputs: List[VariableBuffer],
+                         operatorRepresentation: OperatorRepresentation) -> List[bool]:
+        if inputs[0]._signed or isinstance(inputs[1], ConstantBuffer):
+            return [True]
+        else:
+            return [False]
+"""
+
+#modifica
 class DummyChecker(SignPropTypeChecker):
 
     def __init__(self, input_types: Sequence[Type[Pointer]], output_types: Sequence[Type[Pointer]]):
@@ -495,8 +517,9 @@ class DummyChecker(SignPropTypeChecker):
 
     def _inferNumLevels(self, inputs: List[VariableBuffer],
                         operatorRepresentation: OperatorRepresentation) -> List[int]:
-        return [2**(self.input_types[0].referencedType.typeWidth)]
-        #return [inp.nLevels for inp in inputs]
+        log.info("Inputs for Dummy-> %s",inputs)
+        #return [2**(self.input_types[0].referencedType.typeWidth)]
+        return [inp.nLevels for inp in inputs]
     
 
 
