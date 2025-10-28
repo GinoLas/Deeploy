@@ -199,7 +199,7 @@ if __name__ == '__main__':
     parser.set_defaults(shouldFail = False)
     args = parser.parse_args()
 
-    log.debug("Arguments: %s", args)
+    log.info("Arguments: %s", args)
 
     verbosityCfg = CodeGenVerbosity(None)
 
@@ -254,13 +254,13 @@ if __name__ == '__main__':
 
     platform = deployer.Platform
 
-    log.debug(f"Platform: {platform} (sign: {signProp})")
+    log.info(f"Platform: {platform} (sign: {signProp})")
 
-    log.debug("Platform Engines:")
+    log.info("Platform Engines:")
     for engine in platform.engines:
-        log.debug(f" - {engine.name}: {engine}")
+        log.info(f" - {engine.name}: {engine}")
 
-    log.debug(f"Deployer: {deployer}")
+    log.info(f"Deployer: {deployer}")
 
     for index, num in enumerate(test_inputs):
         _type, offset = inferTypeAndOffset(num, signProp)

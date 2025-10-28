@@ -24,7 +24,8 @@ from Deeploy.Targets.PULPOpen.Platform import PULPPlatform
 
 
 def generateNetwork(args):
-    log.debug("Arguments: %s", args)
+    log.info(" BEGIN generateNetwork")
+    log.info("[generateNetwork] Arguments: %s",args)
 
     onnx_graph = onnx.load_model(f'{args.dir}/network.onnx')
     graph = gs.import_onnx(onnx_graph)
@@ -87,11 +88,11 @@ def generateNetwork(args):
     inputTypes = {}
     inputOffsets = {}
 
-    log.debug(f"Platform: {platform} (sign: {signProp})")
+    log.info(f"Platform: {platform} (sign: {signProp})")
 
-    log.debug("Platform Engines:")
+    log.info("Platform Engines:")
     for engine in platform.engines:
-        log.debug(f" - {engine.name}: {engine}")
+        log.info(f" - {engine.name}: {engine}")
 
     for index, (name, values) in enumerate(zip(inputs.files, test_inputs)):
         if np.prod(values.shape) == 0:
@@ -125,9 +126,39 @@ def generateNetwork(args):
 
     _DEEPLOYSTATEDIR = os.path.join(args.dumpdir, "deeployStates")
 
+    """
+    # assume graph has exactly two inputs
+    inputs = graph.inputs[:2]
+
+    # create one output per input
+    dummy_outputs = [
+        gs.Variable(name=f"dummy_out{i}", dtype=np.float32, shape=inp.shape)
+        for i, inp in enumerate(inputs)
+    ]
+
+    # make the dummy node
+    dummy_node = gs.Node(
+        op="Identity",
+        name="DummyBeforeGraph",
+        inputs=inputs,
+        outputs=dummy_outputs,
+    )
+
+    # now reroute the existing nodes that read those inputs
+    for node in graph.nodes:
+        for i, inp in enumerate(node.inputs):
+            for j, orig_inp in enumerate(inputs):
+                if inp == orig_inp:
+                    node.inputs[i] = dummy_outputs[j]
+
+    # add the dummy node and clean up
+    graph.nodes.append(dummy_node)
+    graph.cleanup().toposort()
+    """
+
     deployer = mapDeployer(platform, graph, inputTypes, deeployStateDir = _DEEPLOYSTATEDIR, inputOffsets = inputOffsets)
 
-    log.debug(f"Deployer: {deployer}")
+    log.info(f"Deployer: {deployer}")
 
     if not isinstance(
             platform, CMSISPlatform
@@ -153,6 +184,8 @@ def generateNetwork(args):
                 values -= buffer.nLevels // 2
 
     generateTestNetwork(deployer, test_inputs, test_outputs, args.dumpdir, verbosityCfg)
+    log.info("END generateNetwork")
+
 
 
 if __name__ == '__main__':

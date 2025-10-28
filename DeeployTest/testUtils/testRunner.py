@@ -344,7 +344,7 @@ class TestRunner():
         command = f"python {generation_script} -d {self._dir_gen} -t {self._dir_test} -p {self._platform} {self.gen_args}"
         command += self._argument_parser.generate_cmd_args()
 
-        log.debug(f"[TestRunner] Generation Command: {command}")
+        log.info(f"[TestRunner] Generation Command: {command}")
 
         err = os.system(command)
         if err != 0:
@@ -368,7 +368,7 @@ class TestRunner():
         if self._args.verbose >= 3:
             command = "VERBOSE=1 " + command
 
-        log.debug(f"[TestRunner] Cmake Command: {command}")
+        log.info(f"[TestRunner] Cmake Command: {command}")
 
         err = os.system(command)
         if err != 0:
@@ -380,7 +380,7 @@ class TestRunner():
         if self._args.verbose >= 3:
             command = "VERBOSE=1 " + command
 
-        log.debug(f"[TestRunner] Building Command: {command}")
+        log.info(f"[TestRunner] Building Command: {command}")
 
         err = os.system(command)
         if err != 0:
@@ -406,7 +406,7 @@ class TestRunner():
             if self._args.verbose >= 3:
                 command = "BANSHEE_LOG=debug " + command
 
-        log.debug(f"[TestRunner] Simulation Command: {command}")
+        log.info(f"[TestRunner] Simulation Command: {command}")
 
         process = subprocess.Popen([command],
                                    stdout = subprocess.PIPE,

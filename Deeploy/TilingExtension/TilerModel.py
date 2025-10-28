@@ -388,7 +388,7 @@ class TilerModel():
 
         timeLimit = self._model.TimeLimit(_SOLVERTIMEOUT)
 
-        log.debug(" - Solve Constraint Model")
+        log.info(" - Solve Constraint Model")
 
         if log.getEffectiveLevel() <= logging.DEBUG:
             searchLog = self._model.SearchLog(1000000)

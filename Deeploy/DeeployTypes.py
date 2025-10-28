@@ -238,7 +238,7 @@ class VariableBuffer():
     allocTemplate: NodeTemplate  #: NodeTemplate: Holds the buffer's allocation code
     deallocTemplate: NodeTemplate  #: NodeTemplate: Holds the buffer's deallocation code
 
-    def __init__(self, name: str = '', shape = [1], aliases: Optional[List[str]] = None):
+    def __init__(self, name: str = '', shape = [1], alias_of: Optional[List[str]] = []):
         self.name: str = name  #: str: Canonical name that this buffer is registered as in the NetworkContext
         self.shape: Sequence[
             int] = shape  #: Sequence[int]: Represents the dimensions of the underlying tensor as a sequence of dimension sizes
@@ -257,7 +257,7 @@ class VariableBuffer():
         self.is_input: bool = False
         self.is_output: bool = False
 
-        self.aliases: Set[str] = set(aliases) if aliases is not None else set()
+        self.alias_of: List[str] = alias_of if alias_of is not None else []
 
     def _bufferRepresentation(self) -> Dict:
         return {"type": self._instance, "name": self.name, "size": int(np.prod(self.shape))}
@@ -324,7 +324,42 @@ class VariableBuffer():
     def fromNode(cls, node: gs.Node):
         return (cls(name = node.name, shape = node.shape if not isinstance(node, gs.Constant) else node.values.shape))
 
-    def has_live_aliases(self, ctxt: NetworkContext) -> bool:
+    def add_aliases(self, aliases_to_add: List[str]):
+        """
+        Adds list of aliases to the alias_of attribute.
+        Parameters
+        ----------
+        alias_to_add : List[str]
+            List of names of aliases to add to the alias_of attribute.
+        Returns
+        -------
+        None
+        """
+
+        if not hasattr(self, "alias_of"):
+            return None
+
+        for alias in aliases_to_add:
+            if alias not in self.alias_of:
+                self.alias_of.append(alias)
+
+        return None
+
+    def get_aliases_of(self):
+        """
+        Getter function for the alias_of attribute.
+        Returns
+        -------
+        List[str]
+            List of names o all aliases of this VariableBuffer.
+        """
+
+        if hasattr(self, "alias_of"):
+            return self.alias_of
+        else:
+            return list()
+
+    def has_live_ancestors(self, ctxt: NetworkContext) -> bool:
         """Checks whether this VariableBuffer has any live ancestors, i.e. buffers that are still live and are aliased by this buffer.
         Parameters
         ----------
@@ -335,18 +370,14 @@ class VariableBuffer():
         bool
             True if this VariableBuffer has any live ancestors, False otherwise
         """
-        # Do a breadth-first search across the aliasing double-linked list
-        live = self._live
-        queue = set(self.aliases)
-        visited = set(self.name)
-        while len(queue) > 0:
-            next = queue.pop()
-            buffNext = ctxt.lookup(next)
-            assert isinstance(buffNext, VariableBuffer)
-            live |= buffNext._live
-            visited.add(next)
-            queue |= buffNext.aliases - visited
-        return live
+        if not hasattr(self, "alias_of"):
+            return False
+
+        for alias in self.alias_of:
+            if ctxt.lookup(alias)._live:
+                return True
+
+        return False
 
     def sizeInBytes(self) -> int:
         """Returns the size of this VariableBuffer in bytes
@@ -367,13 +398,28 @@ class TransientBuffer(VariableBuffer):
     """
 
     def __init__(self, name: str = '', size = 0):
-        super().__init__(name, shape = (size,))
+        self.name = name
+        self.size = size  #: int: Total BYTE size of this TransientBuffer
+
+        # Do not override - Should be written in the parsing passes
+        self._users = []
 
         # Do not override - Should be written in the parsing passes
         self._type: Type[Pointer] = PointerClass(VoidType)
-        self.size = size
+
+        # Do not override - Should be written in the deployment passes
+        self._live = False
+
+        # Do not override - Set in Templates depending on platform
+        self._deploy = True
+
+        self.is_input: bool = False
+        self.is_output: bool = False
+
+        self.alias_of: List[str] = []
 
     def __eq__(self, other):
+
         ret = all([self.name == other.name, self.size == other.size])
         return ret
 
@@ -385,6 +431,10 @@ class TransientBuffer(VariableBuffer):
 
     def __repr__(self) -> str:
         return f'TransientBuffer: name: {self.name}, size: {self.size}'
+
+    @classmethod
+    def fromVariableBuffer(cls, buffer: VariableBuffer):
+        ret = cls(name = buffer.name, size = np.prod(buffer.shape) * buffer._type.typeWidth // 8)
 
     def sizeInBytes(self) -> int:
         return int(self.size)
@@ -428,6 +478,12 @@ class ConstantBuffer(VariableBuffer):
 
     def _bufferRepresentation(self) -> Dict:
         return {"type": self._type, "name": self.name, "size": int(np.prod(self.shape)), "values": self._valueString()}
+
+    @classmethod
+    def fromVariableBuffer(cls, buffer: VariableBuffer, values):
+        ret = cls(name = buffer.name, shape = buffer.shape, values = values)
+
+        return ret
 
 
 class StructBuffer(VariableBuffer):
@@ -943,15 +999,12 @@ class NetworkContext():
         ref._instance = ref._type(name, ctxt = self)
         return ref
 
-    def hoistConstant(self,
-                      constant: gs.Constant,
-                      name: Optional[str] = None,
-                      _type: Optional[Type[Pointer]] = None) -> str:
-        """Register a ConstantBuffer extracted directly from a graphsurgeon Constant
+    def hoistConstant(self, node: gs.Node, name: str = '', _type: Optional[Type[Pointer]] = None) -> str:
+        """Register a ConstantBuffer extracted directly from a graphsurgeon Node
 
         Parameters
         ----------
-        constant : gs.Constant
+        node : gs.Node
             graphsurgeon.Node containing a single constant output
         name : str
             Name of the ConstantBuffer to be registered
@@ -964,18 +1017,21 @@ class NetworkContext():
             Returns the name of the newly registed ConstantBuffer
 
         """
-        assert len(constant.outputs) <= 1, f"Constant {constant.name} has more than one output"
 
-        name = name if name is not None else constant.name
+        assert len(node.outputs) <= 1, f"Constant {node.name} has more than one output"
 
-        # LMACAN: The shape needs to be copied into a tuple for pickling to work. Don't ask me why..
-        buffer = self.ConstantBuffer(name, tuple(constant.shape), constant.values)
-        self.add(buffer, 'global')
+        if name == "":
+            name = node.name
 
-        if _type is not None:
-            self.annotateType(name, _type)
+        # SCHEREMO: This is currently heuristic, but should be annotated in ONNX
+        localBuffer = self.VariableBuffer.fromNode(node = node)
+        globalBuffer = self.ConstantBuffer.fromVariableBuffer(localBuffer, values = node.values)
+        globalBuffer.name = name
+        globalBuffer._type = _type
 
-        return name
+        self.add(globalBuffer, 'global')
+
+        return globalBuffer.name
 
     def addUser(self, name: str, node: gs.Node):
         """Adds an operator's name to the _user list of a VariableBuffer in the context
@@ -1292,6 +1348,9 @@ class NodeTypeChecker():
         """
         retCheck = True
 
+        log.info("Input types %s",self.input_types)
+
+
         for inputNode, _type in zip(node.inputs, self.input_types):
             reference = ctxt.lookup(inputNode.name)
 
@@ -1590,10 +1649,10 @@ class NodeBinding():
 
         newCtxt, ret = self.typeChecker.typeCheck(ctxt.copy(), node, operatorRepresentation)
         if ret:
-            log.debug(f" {SUCCESS_MARK} Type check passed for {self}")
+            log.info(f" {SUCCESS_MARK} Type check passed for {self}")
             return newCtxt, True
         else:
-            log.debug(f" {FAILURE_MARK} Type check failed for {self}")
+            log.info(f" {FAILURE_MARK} Type check failed for {self}")
 
         return ctxt, False
 
@@ -1683,10 +1742,10 @@ class NodeMapper():
 
         newCtxt, ret = self.parser.parse(ctxt.copy(), node, default_channels_first, ioParse)
         if ret:
-            log.debug(f" {SUCCESS_MARK} Parser {self.parser.__class__.__name__} succeeded")
+            log.info(f" {SUCCESS_MARK} Parser {self.parser.__class__.__name__} succeeded")
             return newCtxt, True
         else:
-            log.debug(f" {FAILURE_MARK} Parser {self.parser.__class__.__name__} failed")
+            log.info(f" {FAILURE_MARK} Parser {self.parser.__class__.__name__} failed")
 
         return ctxt, False
 
@@ -1694,12 +1753,14 @@ class NodeMapper():
                    ctxt: NetworkContext,
                    node: gs.Node,
                    default_channels_first: bool = True) -> Tuple[NetworkContext, bool]:
+        
+        log.info("Parsing node %s",node.name)
 
         newCtxt, ret = self.parser.parseNodeCtxt(ctxt.copy(), node, default_channels_first)
         if ret:
-            log.debug(f" {SUCCESS_MARK} Context parsing succeeded with {self.parser.__class__.__name__}")
+            log.info(f" {SUCCESS_MARK} Context parsing succeeded with {self.parser.__class__.__name__}")
         else:
-            log.debug(f" {FAILURE_MARK} Context parsing failed with {self.parser.__class__.__name__}")
+            log.info(f" {FAILURE_MARK} Context parsing failed with {self.parser.__class__.__name__}")
         return (newCtxt, ret)
 
     def bindingsExhausted(self) -> bool:
@@ -1759,7 +1820,7 @@ class NodeMapper():
             self.binder = binder
             return newCtxt, True
 
-        log.debug(f" ‼ All {len(self.bindings)} bindings exhausted for {self.parser.__class__.__name__}")
+        log.info(f" ‼ All {len(self.bindings)} bindings exhausted for {self.parser.__class__.__name__}")
         return ctxt, False
 
     # Don't override this. This should annotate the output node with the correct data type
@@ -1980,7 +2041,7 @@ class ONNXLayer():
         for idx, mapper in enumerate(self.maps):
 
             if mapper in self.discardedMappers:
-                log.debug(f" ⏭️  Skipping mapper {idx}: {mapper.parser.__class__.__name__} (previously discarded)")
+                log.info(f" ⏭️  Skipping mapper {idx}: {mapper.parser.__class__.__name__} (previously discarded)")
                 continue
 
             newCtxt = ctxt.copy()
@@ -2001,7 +2062,7 @@ class ONNXLayer():
             newCtxt, ret = mapper._parseCtxt(newCtxt, self.node, default_channels_first)
 
             if not ret:
-                log.debug(f" {FAILURE_MARK} Context parsing failed for {mapper.parser.__class__.__name__}")
+                log.info(f" {FAILURE_MARK} Context parsing failed for {mapper.parser.__class__.__name__}")
                 self.discardedMappers.add(mapper)
                 continue
 
@@ -2010,7 +2071,7 @@ class ONNXLayer():
 
             return newCtxt, True
 
-        log.debug(f" All {len(self.maps)} mappers exhausted for '{self.node.name}'")
+        log.info(f" All {len(self.maps)} mappers exhausted for '{self.node.name}'")
         return ctxt, False
 
     def _broadcastToNpType(self, ty: Type[BaseType]):
@@ -2050,7 +2111,7 @@ class ONNXLayer():
 
         """
         if not hasattr(self, 'mapper') or self.mapper is None:
-            log.debug(f" {FAILURE_MARK} ONNXLayer.typeCheck() - No mapper selected for '{self.node.name}'")
+            log.info(f" {FAILURE_MARK} ONNXLayer.typeCheck() - No mapper selected for '{self.node.name}'")
             return ctxt, False
 
         newCtxt = ctxt.copy()
@@ -2200,7 +2261,7 @@ class TopologyOptimizer():
             graph = _pass.apply(graph)
             graph.cleanup().toposort()
             end_time = time.perf_counter()
-            log.debug(f" - Applied {_pass.__class__.__name__} ({(end_time - start_time)*1E3:.3f} ms)")
+            log.info(f" - Applied {_pass.__class__.__name__} ({(end_time - start_time)*1E3:.3f} ms)")
         return graph
 
 
@@ -2584,7 +2645,7 @@ class NetworkContainer():
         for node in flatSchedule:
             layer = self._mapNode(node)
             if isinstance(layer, ONNXLayer):
-                log.debug(f"   {SUCCESS_MARK} Bind {node.name} to layer {layer.__class__.__name__}")
+                log.info(f"   {SUCCESS_MARK} Bind {node.name} to layer {layer.__class__.__name__}")
                 self.layerBinding[layer.node.name] = layer
 
     def _parseNode(self, node: ONNXLayer, ctxt: NetworkContext,
@@ -2632,10 +2693,10 @@ class NetworkContainer():
                                    structBuffer = self.Platform.StructBuffer,
                                    transientBuffer = self.Platform.TransientBuffer)
 
-        log.debug(" - Create IO Bindings")
+        log.info(" - Create IO Bindings")
         self.ctxt = self._createIOBindings(self.ctxt, self.graph)
 
-        log.debug(" - Bind Nodes to Layers")
+        log.info(" - Bind Nodes to Layers")
         self._bindLayers()
 
         ctxt = self.ctxt.copy()
@@ -2646,7 +2707,7 @@ class NetworkContainer():
 
         deepestIdx = 0
 
-        log.debug(" - Parse and Type Check Network")
+        log.info(" - Parse and Type Check Network")
         start_time = time.perf_counter()
 
         iteration_main = 0
@@ -2660,9 +2721,9 @@ class NetworkContainer():
                 iteration_main += 1
                 iteration_tot += 1
                 iteration_sub = 0
-                log.debug(31 * "-" + f" MAIN ITERATION {iteration_main:<2} " + 31 * "-")
+                log.info(31 * "-" + f" MAIN ITERATION {iteration_main:<2} " + 31 * "-")
 
-            log.debug(f"[Layer {idx}] Trying '{currentLayer.node.name}' (op: {currentLayer.node.op})")
+            log.info(f"[Layer {idx}] Trying '{currentLayer.node.name}' (op: {currentLayer.node.op})")
 
             stCtxt = copy.deepcopy(ctxt)
 
@@ -2686,7 +2747,7 @@ class NetworkContainer():
                 if idx == 0:
                     deepestLayer = scheduledLayerList[deepestIdx]
                     deepestNodeName = deepestLayer.node.name
-                    log.debug("-" * 80)
+                    log.info("-" * 80)
                     log.error("💥 PARSING FAILED - Backtracking exhausted at root!")
                     log.error("=" * 80)
                     log.error(f"🔍 Diagnosis:")
@@ -2715,7 +2776,7 @@ class NetworkContainer():
                 if idx != 0:
                     iteration_sub += 1
                     iteration_tot += 1
-                    log.debug(31 * "-" + f" SUB ITERATION {iteration_main}.{iteration_sub:<2} " + 31 * "-")
+                    log.info(31 * "-" + f" SUB ITERATION {iteration_main}.{iteration_sub:<2} " + 31 * "-")
 
         end_time = time.perf_counter()
         log.info(
@@ -2756,7 +2817,7 @@ class NetworkContainer():
             if not NetworkBindSuccess:
                 raise RuntimeError(f'Could not find a valid binding for the graph')
 
-            log.debug(f" {SUCCESS_MARK} Mapped {layer.node.name} to {layer.mapper.binder}")
+            log.info(f" {SUCCESS_MARK} Mapped {layer.node.name} to {layer.mapper.binder}")
 
         self.bound = True
         self.ctxt = newCtxt
@@ -3372,11 +3433,6 @@ class NetworkDeployer(NetworkContainer):
         for node in filter(lambda x: x.op == "Identity", self.graph.nodes):
             self.graph.deleteNode(node)
 
-    def _assertTensorsHaveShape(self) -> None:
-        missingShapes = [name for name, tensor in self.graph.tensors().items() if tensor.shape is None]
-        assert len(missingShapes) == 0, \
-            f"Shape inference is not supported.\nFound tensors with missing shape annotation: {missingShapes}"
-
     def frontEnd(self):
         """API hook to prepare the graph to be deployed and build the initial NetworkContext
 
@@ -3388,13 +3444,14 @@ class NetworkDeployer(NetworkContainer):
 
         log.info("- Apply Preprocessing")
 
-        log.debug(" - Remove Identity Nodes")
-        self._removeIdentityNodes()
+        #modifica
+        log.info(" - Remove Identity Nodes")
+        #self._removeIdentityNodes()
 
-        log.debug(" - Mangle Tensor Names")
+        log.info(" - Mangle Tensor Names")
         self._mangleTensorNames()
 
-        log.debug(" - Mangle Node Names")
+        log.info(" - Mangle Node Names")
         self._mangleNodeNames()
 
         # Rename graph inputs and outputs:
@@ -3403,16 +3460,16 @@ class NetworkDeployer(NetworkContainer):
         for idx, outputNode in enumerate(self.graph.outputs):
             outputNode.name = "output_" + str(idx)
 
-        log.debug(" - Sanitize Graph Names")
+        log.info(" - Sanitize Graph Names")
         self._sanitizeGraphNames(self.graph)
 
-        log.debug(" - Remove Empty Inputs")
+        log.info(" - Remove Empty Inputs")
         self._removeEmptyInputs(self.graph)
 
-        log.debug(" - Duplicate Constants")
+        log.info(" - Duplicate Constants")
         self._duplicateConstants(self.graph)
 
-        log.debug(" - Constant Folding")
+        log.info(" - Constant Folding")
         self._foldConstants(self.graph)
 
         log.info(f"> Export State to {_middlewarePreLoweringFilename}[.onnx|.pkl]")
@@ -3421,11 +3478,45 @@ class NetworkDeployer(NetworkContainer):
         log.info("- Perform Graph Lowering")
         self.graph = self.lower(self.graph)  # This lowers the graph to a deployable format
 
+        #Dummy nodes insertion 
+
+        newNodes = []
+
+        for i,_node in enumerate(self.graph.nodes):
+            log.info("Sto manipolando il nodo %s",_node.name)
+
+            
+            dummy_outputs = [
+                gs.Variable(name=f"{_node.name}_dummy_out_{j}",
+                            dtype=inp.dtype,
+                            shape=inp.shape)
+                for j, inp in enumerate(_node.inputs)
+            ]
+
+            dummyNode = gs.Node(
+                op = "Dummy",
+                name = "Pre_"+_node.name,
+                inputs = _node.inputs,
+                outputs =  dummy_outputs 
+            )
+            log.info("Dummy node is %s",dummyNode)
+            _node.inputs = dummyNode.outputs
+            newNodes.append(dummyNode)
+
+        for _node in newNodes:
+            self.graph.nodes.insert(0,_node)
+
+        for _node in self.graph.nodes:
+            log.info("Node : %s",_node.name)
+            for inp in _node.inputs:
+                print("Input:", inp.name, "dtype:", inp.dtype, "shape:", inp.shape)
+            for out in _node.outputs:
+                print("Input:", out.name, "dtype:", out.dtype, "shape:", out.shape)
+
+        log.info("Graph is now %s",self.graph)
+
         log.info(f"> Export State {_middlewarePostLoweringFilename}[.onnx|.pkl]")
         self.exportDeeployState(self.deeployStateDir, _middlewarePostLoweringFilename)
-
-        log.info(" - Assert all tensors have a shape annotation")
-        self._assertTensorsHaveShape()
 
         log.info("- Perform Graph Parsing")
         try:

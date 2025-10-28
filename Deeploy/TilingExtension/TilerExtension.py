@@ -300,7 +300,7 @@ class Tiler():
         tilingSolution = self._getTilingSolution(self.tilerModel, ctxt, collector, self.symbolicMemoryConstraints)
         if not self.memoryAllocStrategy == "MiniMalloc":
             assert self.tilerModel is not None
-            log.debug(" - Extract Memory Allocation")
+            log.info(" - Extract Memory Allocation")
             self.innerMemoryScheduler.annotateSolution(ctxt, self.tilerModel)
             self.outerMemoryScheduler.annotateSolution(ctxt, self.tilerModel)
         return tilingSolution
@@ -312,7 +312,7 @@ class Tiler():
             memoryMap[key] = [*self.innerMemoryScheduler.memoryMap[key], *self.outerMemoryScheduler.memoryMap[key]]
 
         if self.memoryAllocStrategy == "MiniMalloc":
-            log.debug(" - Solve Memory Allocation with MiniMalloc")
+            log.info(" - Solve Memory Allocation with MiniMalloc")
             for memoryLevel in memoryMap.keys():
                 constantTensorOffset = self.outerMemoryScheduler.getConstantTensorOffset(ctxt, memoryLevel)
                 if memoryLevel == self.memoryHierarchy._defaultMemoryLevel.name:
@@ -967,7 +967,7 @@ class TilerDeployerWrapper(NetworkDeployerWrapper):
                     self.ctxt, self.Platform.memoryHierarchy._defaultMemoryLevel.name
                 ), "All tensors have to be in the default memory level when using MiniMalloc!"
 
-            log.debug(" - Setup Constraint Model")
+            log.info(" - Setup Constraint Model")
             self.tiler.setupModel(ctxt = self.ctxt,
                                   schedule = schedule,
                                   layerBinding = self.layerBinding,
@@ -978,10 +978,10 @@ class TilerDeployerWrapper(NetworkDeployerWrapper):
 
         assert tilingSolution is not None and memoryMap is not None
 
-        log.debug(" - Test Tiling Solution Correctness")
+        log.info(" - Test Tiling Solution Correctness")
         self.tiler.testTilingSolutionCorrectness(tilingSolution)
 
-        log.debug(" - Annotate Memory Levels")
+        log.info(" - Annotate Memory Levels")
         self.tiler.annotateMemoryLevel(self.ctxt, tilingSolution, memoryMap)
 
         self.ctxt = self.tiler._convertCtxtToStaticSchedule(self.ctxt, memoryMap)
@@ -990,7 +990,7 @@ class TilerDeployerWrapper(NetworkDeployerWrapper):
             log.info(f" > Export Memory Allocation Visualization to {self.deeployStateDir}")
             self.tiler.plotMemoryAlloc(memoryMap, self.ctxt, self.deeployStateDir, self.Platform.memoryHierarchy)
 
-        log.debug(" - Test Memory Map Correctness")
+        log.info(" - Test Memory Map Correctness")
         self.tiler.testMemoryMapCorrectness(memoryMap, self.graph, schedule)
 
         # SCHEREMO: Annotate execution block with solution

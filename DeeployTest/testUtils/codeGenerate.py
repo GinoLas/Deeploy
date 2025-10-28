@@ -11,6 +11,9 @@ from Deeploy.DeeployTypes import CodeGenVerbosity, ConstantBuffer, NetworkDeploy
 from Deeploy.Targets.MemPool.Platform import MemPoolPlatform
 from Deeploy.Targets.PULPOpen.Platform import MemoryPULPPlatform, MemoryPULPPlatformWrapper, PULPPlatform
 
+from Deeploy.Logging import DEFAULT_LOGGER as log
+
+
 _TEXT_ALIGN = 30
 
 
@@ -31,6 +34,7 @@ def _shapeBroadcast(ctxt, value, name):
 
 
 def generateTestInputsHeader(deployer: NetworkDeployer, test_inputs: List) -> str:
+    log.info("BEGIN generateTestInputsHeader")
     vectors = []
     retStr = ""
     for index, values in enumerate(test_inputs):
@@ -73,11 +77,12 @@ def generateTestInputsHeader(deployer: NetworkDeployer, test_inputs: List) -> st
     retStr += f"void* testInputVector[{len(vectors)}] = {{"
     retStr += ", ".join(vectors)
     retStr += "};\n"
-
+    log.info("END generateTestInputsHeader")
     return retStr
 
 
 def generateTestOutputsHeader(deployer: NetworkDeployer, test_outputs: List[np.ndarray]) -> str:
+    log.info("BEGIN generateTestOutputsHeader")
     retStr = ""
     for index, values in enumerate(test_outputs):
         typeName = deployer.ctxt.lookup(f'output_{index}')._type.referencedType.typeName
@@ -108,12 +113,12 @@ def generateTestOutputsHeader(deployer: NetworkDeployer, test_outputs: List[np.n
     retStr += f"void* testOutputVector[{len(test_outputs)}] = " + "{"
     retStr += ", ".join([f"testOutputVector{idx}" for idx, _ in enumerate(test_outputs)])
     retStr += "};\n"
-
+    log.info("END generateTestOutputsHeader")
     return retStr
 
 
 def generateTestNetworkHeader(deployer: NetworkDeployer) -> str:
-
+    log.info("BEGIN generateTestNetworkHeader")
     retStr = ""
 
     retStr += """
@@ -141,11 +146,12 @@ def generateTestNetworkHeader(deployer: NetworkDeployer) -> str:
     retStr += """
     #endif
     """
-
+    log.info("END generateTestNetworkHeader")
     return retStr
 
 
 def generateTestNetworkImplementation(deployer: NetworkDeployer, verbosityCfg: CodeGenVerbosity) -> str:
+    log.info("BEGIN generateTestNetworkImplementation")
     retStr = ""
 
     retStr += """#include <stdio.h>
@@ -197,7 +203,7 @@ def generateTestNetworkImplementation(deployer: NetworkDeployer, verbosityCfg: C
     retStr += """
     }
     """
-
+    log.info("END generateTestNetworkImplementation")
     return retStr
 
 
@@ -257,6 +263,8 @@ def generateL3HexDump(deployer: NetworkDeployer, path: str, test_inputs: List, t
 
 def generateTestNetwork(deployer: NetworkDeployer, test_inputs: List[np.ndarray], test_outputs: List[np.ndarray],
                         dumpdir: str, verbosityCfg: CodeGenVerbosity) -> None:
+    log.info("BEGIN generateTestNetwork")
+
     assert deployer.prepared, "An unprepared deployer was given"
 
     # Create input and output vectors
@@ -286,3 +294,5 @@ def generateTestNetwork(deployer: NetworkDeployer, test_inputs: List[np.ndarray]
     os.system(f'clang-format -i --style="{clang_format}" {dumpdir}/Network.h')
     os.system(f'clang-format -i --style="{clang_format}" {dumpdir}/testoutputs.h')
     os.system(f'clang-format -i --style="{clang_format}" {dumpdir}/testinputs.h')
+    log.info("END generateTestNetwork")
+
