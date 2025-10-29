@@ -1149,6 +1149,8 @@ class NodeParser():
             Updated NetworkContext with hoisted IO tensors
 
         """
+        log.info("###Parsing %s inputs...###",node.name)
+
         data_in_buffers = []
         for inputNode in node.inputs:
             data_in = inputNode.name
@@ -1165,7 +1167,6 @@ class NodeParser():
 
     @classmethod
     def parseOutputs(cls, ctxt: NetworkContext, node: gs.Node) -> NetworkContext:
-        log.info("HEYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
         """DONT OVERRIDE - registers the output tensor of the operator
 
         Parameters
@@ -1181,6 +1182,9 @@ class NodeParser():
             Updated NetworkContext
 
         """
+
+        log.info("###Parsing %s outputs...###",node.name)
+
         outputNodes = node.outputs
         outputNames = [node.name for node in outputNodes]
 
@@ -3490,10 +3494,8 @@ class NetworkDeployer(NetworkContainer):
         self.graph = self.lower(self.graph)  # This lowers the graph to a deployable format
 
         #Dummy nodes insertion 
-        #"""
+        """
     
-        
-
         for i,_node in enumerate(list(self.graph.nodes)):
             newNodes = []
 
@@ -3519,15 +3521,47 @@ class NetworkDeployer(NetworkContainer):
             
             for _node in newNodes:
                 self.graph.nodes.insert(i,_node)
+        """
 
-        #"""
+        new_graph_nodes = []
 
+        for node in self.graph.nodes:
+            for j, _input in enumerate(node.inputs):
+                """
+                if isinstance(_input, gs.ir.tensor.Constant):
+                    continue
+                """
+
+                crypto_output = gs.Variable(
+                    name=f"{node.name}_crypto_out_{j}",
+                    dtype=_input.dtype,
+                    shape=_input.shape
+                )
+
+                cryptoNode = gs.Node(
+                    op="Crypto",
+                    name=f"Crypto_{node.name}_input_{j}",
+                    inputs=[_input],
+                    outputs=[crypto_output]
+                )
+
+                node.inputs[j] = crypto_output
+
+                new_graph_nodes.append(cryptoNode)
+
+            new_graph_nodes.append(node)
+
+        self.graph.nodes = new_graph_nodes
+
+
+        """
         for _node in self.graph.nodes:
             log.info("Node : %s",_node.name)
             for inp in _node.inputs:
-                print("Input:", inp.name, "dtype:", inp.dtype, "shape:", inp.shape)
+                print("[Async]Input:", inp.name, "dtype:", inp.dtype, "shape:", inp.shape)
             for out in _node.outputs:
-                print("Input:", out.name, "dtype:", out.dtype, "shape:", out.shape)
+                print("[Async]Input:", out.name, "dtype:", out.dtype, "shape:", out.shape)
+        """
 
         log.info("Graph is now %s",self.graph)
 
