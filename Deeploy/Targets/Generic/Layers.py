@@ -9,7 +9,20 @@ import numpy as np
 
 from Deeploy.DeeployTypes import NodeMapper, ONNXLayer, OperatorRepresentation, Shape
 
+#modifica
+class CryptoLayer(ONNXLayer):
 
+    def __init__(self, maps: List[NodeMapper]):
+        super().__init__(maps)
+
+    def computeShapes(self, inputShapes: Shape, outputShapes: Shape, operatorRepresentation,
+                      channels_first) -> Tuple[Shape, Shape]:
+
+        outputShapes = [inputShapes[0]]
+        return (inputShapes, outputShapes)
+
+    def computeOps(self):
+        return self.mapper.parser.operatorRepresentation['size']
 
 
 class ConcatLayer(ONNXLayer):

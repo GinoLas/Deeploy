@@ -45,7 +45,12 @@ class SignPropTypeChecker(NodeTypeChecker):
         signProp = all([hasattr(_input, "_signed") and hasattr(_input, "nLevels") for _input in inputs])
 
         if signProp:
+            log.info("Computing output type for node %s",node.name)
+            log.info("Context = %s",ctxt)
+            log.info("Inputs %s",inputs)
+            log.info("Operator representation %s",operatorRepresentation)
             nLevels = self._inferNumLevels(inputs, operatorRepresentation)
+            log.info("output nLevels = %s",nLevels)
             signedness = self._inferSignedness(inputs, operatorRepresentation)
 
             if nLevels is None or signedness is None:

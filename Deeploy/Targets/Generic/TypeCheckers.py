@@ -85,6 +85,20 @@ class PadChecker(SignPropTypeChecker):
             return [True]
         else:
             return [False]
+        
+#modifica
+class CryptoChecker(SignPropTypeChecker):
+    def __init__(self, input_types: Sequence[Type[Pointer]], output_types: Sequence[Type[Pointer]]):
+        super().__init__(input_types, output_types)
+
+    def _inferNumLevels(self, inputs: List[VariableBuffer],
+                        operatorRepresentation: OperatorRepresentation) -> List[int]:
+        log.info("Inputs -> %s",inputs)
+        log.info("Ciao ----> inputs[0].nLevels = %s",inputs[0].nLevels)
+        return [inputs[0].nLevels]
+    
+    def _inferSignedness(self, inputs, operatorRepresentation):
+        return [inputs[0]._signed]
 
 
 class AddChecker(SignPropTypeChecker):

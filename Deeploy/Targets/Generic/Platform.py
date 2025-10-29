@@ -6,18 +6,18 @@ from Deeploy.CommonExtensions.OptimizationPasses.TopologyOptimizationPasses.Lowe
     RemoveEmptyConvBiasPass
 from Deeploy.DeeployTypes import ConstantBuffer, DeploymentEngine, DeploymentPlatform, NodeMapper, NodeTemplate, \
     StructBuffer, TopologyOptimizer, TransientBuffer, VariableBuffer
-from Deeploy.Targets.Generic.Bindings import BasicAddBindings, BasicConcatBindings, BasicConv1DBinding, \
+from Deeploy.Targets.Generic.Bindings import BasicCryptoBindings, BasicAddBindings, BasicConcatBindings, BasicConv1DBinding, \
     BasicConv2DBindings, BasicDebugPrintBindings, BasicDequantBindings, BasicDivBindings, BasicDWConv1DBinding, \
     BasicDWConv2DBindings, BasicGatherBindings, BasicGELUBindings, BasicGEMMBindings, BasicITAPartialSoftmaxBinding, \
     BasicITASoftmaxBinding, BasicLayerNormBindings, BasicMatMulBindings, BasicMaxPool2DBindings, BasicMulBindings, \
     BasicPad1DBindings, BasicPad2DBindings, BasicQuantBindings, BasicReduceMeanBindings, BasicReduceSumBindings, \
     BasicReluBinding, BasicReshapeBindings, BasicRQIntegerDivBinding, BasicRQSBindings, BasicRQSGELUBinding, \
     BasicSliceBindings, BasicSoftmaxBindings, BasicTransposeBindings, DummyBinding
-from Deeploy.Targets.Generic.Layers import DummyLayer,AddLayer, ConcatLayer, ConvLayer, DebugPrintLayer, DequantLayer, DivLayer, \
+from Deeploy.Targets.Generic.Layers import CryptoLayer,AddLayer, ConcatLayer, ConvLayer, DebugPrintLayer, DequantLayer, DivLayer, \
     GatherLayer, GELULayer, GEMMLayer, ITAMaxLayer, LayerNormLayer, MatMulLayer, MaxPoolLayer, MulLayer, PadLayer, \
     QuantLayer, ReduceMeanLayer, ReduceSumLayer, ReluLayer, RequantShiftLayer, ReshapeLayer, RQIntegerDivLayer, \
     RQSiGELULayer, SliceLayer, SoftmaxLayer, TransposeLayer
-from Deeploy.Targets.Generic.Parsers import AddParser, ConcatParser, DebugParser, DequantParser, DivParser, \
+from Deeploy.Targets.Generic.Parsers import CryptoParser, AddParser, ConcatParser, DebugParser, DequantParser, DivParser, \
     DummyParser, FlattenParser, GatherParser, GELUParser, GenericConv1DParser, GenericConv2DParser, \
     GenericDWConv1DParser, GenericDWConv2DParser, GenericGEMMParser, GenericMaxPool2DParser, IntegerDivParser, \
     ITAMaxParser, ITAPartialMaxParser, LayerNormParser, MatMulParser, MulParser, Pad1DParser, Pad2DParser, \
@@ -28,7 +28,8 @@ from Deeploy.Targets.Generic.TopologyOptimizationPasses.Passes import DequantPat
     ExtractPaddingFromPoolPass, MatMulAddMergePass, MergeConstAddAndRequantPass, QuantPatternPass, \
     iGELURequantMergePass
 
-DummyMapper = NodeMapper(DummyParser(),DummyBinding)
+#modifica
+CryptoMapper = NodeMapper(CryptoParser(),BasicCryptoBindings)
 AddMapper = NodeMapper(AddParser(), BasicAddBindings)
 Conv1DMapper = NodeMapper(GenericConv1DParser(), [BasicConv1DBinding])
 Conv2DMapper = NodeMapper(GenericConv2DParser(), BasicConv2DBindings)
@@ -73,7 +74,8 @@ DummyMapper = NodeMapper(DummyParser(), [DummyBinding])
 
 GenericMapping = {
     #modifica
-    'Dummy' : DummyLayer([DummyMapper]),
+    'Crypto' : CryptoLayer([CryptoMapper]),
+    #'Dummy' : DummyLayer([DummyMapper]),
     'Add': AddLayer([AddMapper]),
     'Conv': ConvLayer([Conv2DMapper, DWConv2DMapper, Conv1DMapper, DWConv1DMapper]),
     'Concat': ConcatLayer([ConcatMapper]),

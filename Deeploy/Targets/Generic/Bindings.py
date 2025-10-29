@@ -11,7 +11,7 @@ from Deeploy.CommonExtensions.DataTypes import FloatDataTypes, IntegerDataTypes,
     int8_t, int32_t, uint8_t
 from Deeploy.DeeployTypes import CodeTransformation, NodeBinding
 from Deeploy.FutureExtension.CodeTransformationPasses.FutureCodeTransformation import FutureGeneration
-from Deeploy.Targets.Generic.Templates import AddTemplate, ConcatTemplate, ConvTemplate, DebugPrintTemplate, \
+from Deeploy.Targets.Generic.Templates import CryptoTemplate, AddTemplate, ConcatTemplate, ConvTemplate, DebugPrintTemplate, \
     DequantTemplate, DummyTemplate, DWConvTemplate, FloatAddTemplate, FloatConvTemplate, FloatDivTemplate, \
     FloatDWConvTemplate, FloatGELUTemplate, FloatGemmTemplate, FloatLayernormTemplate, FloatMatMulTemplate, \
     FloatMaxPoolTemplate, FloatMulTemplate, FloatPadTemplate, FloatReduceMeanTemplate, FloatReluTemplate, \
@@ -19,13 +19,22 @@ from Deeploy.Targets.Generic.Templates import AddTemplate, ConcatTemplate, ConvT
     MatMulTemplate, MaxPoolTemplate, MulTemplate, PadTemplate, QuantTemplate, ReduceMeanTemplate, ReduceSumTemplate, \
     RequantShiftTemplate, ReshapeTemplate, RQIntegerDivTemplate, RQSiGELUTemplate, SliceTemplate, TransposeTemplate, \
     iGELUTemplate, iLayernormTemplate, iRMSNormTemplate, iSoftmaxTemplate
-from Deeploy.Targets.Generic.TypeCheckers import AddChecker, ConcatChecker, ConvChecker, DebugPrintChecker, \
+from Deeploy.Targets.Generic.TypeCheckers import CryptoChecker, AddChecker, ConcatChecker, ConvChecker, DebugPrintChecker, \
     DequantChecker, DivChecker, DummyChecker, GatherChecker, GELUChecker, GEMMChecker, LayerNormChecker, \
     MatMulChecker, MaxPoolChecker, MulChecker, PadChecker, QuantChecker, ReduceMeanChecker, ReduceSumChecker, \
     ReluChecker, RequantShiftChecker, ReshapeChecker, RQIntegerDivChecker, SliceChecker, SoftmaxChecker, \
     TransposeChecker
 
 BasicTransformer = CodeTransformation([ArgumentStructGeneration(), MemoryManagementGeneration(), FutureGeneration()])
+
+#modifica 
+
+BasicCryptoBindings = [NodeBinding(CryptoChecker([PointerClass(type1)], [PointerClass(type2)]),
+                CryptoTemplate.referenceTemplate, BasicTransformer)
+    for type1 in IntegerDataTypes
+    for type2 in IntegerDataTypes
+]
+
 
 ReshapeSkipTransformer = CodeTransformation(
     [ArgumentStructGeneration(), MemoryPassthroughGeneration(),

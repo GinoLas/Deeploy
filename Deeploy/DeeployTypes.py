@@ -1152,20 +1152,20 @@ class NodeParser():
         data_in_buffers = []
         for inputNode in node.inputs:
             data_in = inputNode.name
-
             # Hoist constant inputs
             if type(inputNode) == gs.ir.tensor.Constant and not ctxt.is_global(data_in):
                 ctxt.hoistConstant(inputNode)
             else:
                 localBuffer = ctxt.lookup(data_in)
                 data_in_buffers.append(localBuffer.name)
-
+            log.info("%s is used by %s",data_in,node.name)
             ctxt.addUser(data_in, node)
 
         return ctxt
 
     @classmethod
     def parseOutputs(cls, ctxt: NetworkContext, node: gs.Node) -> NetworkContext:
+        log.info("HEYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
         """DONT OVERRIDE - registers the output tensor of the operator
 
         Parameters
@@ -1187,10 +1187,11 @@ class NodeParser():
         for node, name in zip(outputNodes, outputNames):
             if not ctxt.is_global(name):
                 nb = ctxt.VariableBuffer(name = name, shape = node.shape)
+                log.info("Adding %s to context (local)",name)
                 ctxt.add(nb, 'local')
             else:
                 nb = ctxt.lookup(name)
-
+                log.info(nb.name)
         return ctxt
 
     @staticmethod
@@ -2696,9 +2697,14 @@ class NetworkContainer():
                                    constantBuffer = self.Platform.ConstantBuffer,
                                    structBuffer = self.Platform.StructBuffer,
                                    transientBuffer = self.Platform.TransientBuffer)
+        
+        log.info("CONTEXT = %s",self.ctxt)
 
         log.info(" - Create IO Bindings")
         self.ctxt = self._createIOBindings(self.ctxt, self.graph)
+
+        log.info("CONTEXT post IO bindings = %s",self.ctxt)
+
 
         log.info(" - Bind Nodes to Layers")
         self._bindLayers()
@@ -2787,6 +2793,7 @@ class NetworkContainer():
             f" {SUCCESS_MARK} Parsed network with {len(self.layerBinding)} layers after {iteration_tot} iterations in {(end_time-start_time)*1E3:.3f} ms"
         )
         self.ctxt = ctxt
+        log.info("After parsing context = %s",self.ctxt)
         self.parsed = True
         return True
 
@@ -3483,32 +3490,37 @@ class NetworkDeployer(NetworkContainer):
         self.graph = self.lower(self.graph)  # This lowers the graph to a deployable format
 
         #Dummy nodes insertion 
+        #"""
+    
+        
 
-        newNodes = []
+        for i,_node in enumerate(list(self.graph.nodes)):
+            newNodes = []
 
-        for i,_node in enumerate(self.graph.nodes):
             log.info("Sto manipolando il nodo %s",_node.name)
 
+            for j,_input in enumerate(_node.inputs):
+                log.info("Input : %s",_input)
+
+                crypto_output = gs.Variable(name=f"{_node.name}_crypto_out_{j}",
+                            dtype=_input.dtype,
+                            shape=_input.shape)
+                
+                cryptoNode = gs.Node(
+                op = "Crypto",
+                name = f"Crypto_{_node.name}_input_{j}",
+                inputs = [_input],
+                outputs =  [crypto_output] 
+                )
+
+                _node.inputs[j] = crypto_output
+
+                newNodes.append(cryptoNode)
             
-            dummy_outputs = [
-                gs.Variable(name=f"{_node.name}_dummy_out_{j}",
-                            dtype=inp.dtype,
-                            shape=inp.shape)
-                for j, inp in enumerate(_node.inputs)
-            ]
+            for _node in newNodes:
+                self.graph.nodes.insert(i,_node)
 
-            dummyNode = gs.Node(
-                op = "Dummy",
-                name = "Pre_"+_node.name,
-                inputs = _node.inputs,
-                outputs =  dummy_outputs 
-            )
-            log.info("Dummy node is %s",dummyNode)
-            _node.inputs = dummyNode.outputs
-            newNodes.append(dummyNode)
-
-        for _node in newNodes:
-            self.graph.nodes.insert(0,_node)
+        #"""
 
         for _node in self.graph.nodes:
             log.info("Node : %s",_node.name)
