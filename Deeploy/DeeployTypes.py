@@ -3494,43 +3494,17 @@ class NetworkDeployer(NetworkContainer):
         self.graph = self.lower(self.graph)  # This lowers the graph to a deployable format
 
         #Dummy nodes insertion 
-        """
-    
-        for i,_node in enumerate(list(self.graph.nodes)):
-            newNodes = []
 
-            log.info("Sto manipolando il nodo %s",_node.name)
-
-            for j,_input in enumerate(_node.inputs):
-                log.info("Input : %s",_input)
-
-                crypto_output = gs.Variable(name=f"{_node.name}_crypto_out_{j}",
-                            dtype=_input.dtype,
-                            shape=_input.shape)
-                
-                cryptoNode = gs.Node(
-                op = "Crypto",
-                name = f"Crypto_{_node.name}_input_{j}",
-                inputs = [_input],
-                outputs =  [crypto_output] 
-                )
-
-                _node.inputs[j] = crypto_output
-
-                newNodes.append(cryptoNode)
-            
-            for _node in newNodes:
-                self.graph.nodes.insert(i,_node)
         """
 
         new_graph_nodes = []
 
         for node in self.graph.nodes:
             for j, _input in enumerate(node.inputs):
-                """
-                if isinstance(_input, gs.ir.tensor.Constant):
-                    continue
-                """
+                
+                #if isinstance(_input, gs.ir.tensor.Constant):
+                #    continue
+    
 
                 crypto_output = gs.Variable(
                     name=f"{node.name}_crypto_out_{j}",
@@ -3552,6 +3526,8 @@ class NetworkDeployer(NetworkContainer):
             new_graph_nodes.append(node)
 
         self.graph.nodes = new_graph_nodes
+
+        """
 
 
         """

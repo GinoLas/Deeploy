@@ -73,8 +73,11 @@ echo-bash:
 	@echo "export PATH=${QEMU_INSTALL_DIR}/bin:${BANSHEE_INSTALL_DIR}:\$$PATH"
 	@echo "export PATH=~/.cargo/bin:\$$PATH"
 	@echo ""
-	@echo "Additionally you need to source the following script:"
+	@echo "Additionally you need to source the following scripts:"
 	@echo "source ${PULP_SDK_INSTALL_DIR}/configs/siracusa.sh"
+	@echo "source ${PULP_SDK_INSTALL_DIR}/configs/alsaqr.sh"
+
+
 
 
 toolchain: llvm llvm-compiler-rt-riscv llvm-compiler-rt-arm picolibc-arm picolibc-riscv

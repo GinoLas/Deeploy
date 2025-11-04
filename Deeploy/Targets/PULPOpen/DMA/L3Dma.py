@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from Deeploy.Logging import DEFAULT_LOGGER as log
+
+
 import math
 from typing import Dict, Tuple
 
@@ -50,6 +53,9 @@ class L3Dma(AsyncDma):
             "length": shape[1],
             "stride": strideExt[0],
         })
+
+        log.info("Memory transfer representation for L3DMA %s",operatorRepresentation)
+
         return operatorRepresentation
 
 

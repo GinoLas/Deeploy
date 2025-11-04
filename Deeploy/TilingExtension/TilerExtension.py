@@ -303,6 +303,7 @@ class Tiler():
             log.info(" - Extract Memory Allocation")
             self.innerMemoryScheduler.annotateSolution(ctxt, self.tilerModel)
             self.outerMemoryScheduler.annotateSolution(ctxt, self.tilerModel)
+        log.info("Tiling solution %s",tilingSolution)
         return tilingSolution
 
     def computeMemoryMap(self, ctxt: NetworkContext, tilingSolution: TilingSolution) -> MemoryMap:
@@ -326,6 +327,7 @@ class Tiler():
                                 memMap, ctxt, tilingSolution[idx].nodeConstraints[0],
                                 self.memoryHierarchy.memoryLevels[memoryLevel].size - constantTensorOffset, memoryLevel)
             log.info(f" {SUCCESS_MARK} Memory allocation successful!")
+            log.info("Memory map %s",memoryMap)
 
         return memoryMap
 
@@ -712,7 +714,7 @@ class Tiler():
             memConstraint = MemoryConstraint(hop, end.size)
             memConstraint.multiBufferCoefficient = factor
             returnTensorConstraint.addMemoryConstraint(memConstraint)
-
+        log.info("Tiling path :%s",returnTensorConstraint)
         return returnTensorConstraint
 
     def _generateIntermediateTilingSteps(self, tilerModel: TilerModel, ctxt: NetworkContext,

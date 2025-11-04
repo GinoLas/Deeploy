@@ -5,6 +5,9 @@
 import math
 from typing import Dict, Tuple
 
+from Deeploy.Logging import DEFAULT_LOGGER as log
+
+
 from Deeploy.DeeployTypes import NetworkContext, NodeTemplate, OperatorRepresentation, VariableBuffer
 from Deeploy.TilingExtension.AsyncDma import AsyncDma, DmaDirection, Future, TensorGroupWaitingStrategy
 
@@ -66,5 +69,7 @@ class MchanDma(AsyncDma):
         if transferRank == 2:
             operatorRepresentation["size_1d"] = shape[1]
             operatorRepresentation["stride_2d"] = strideExt[0]
+
+        log.info("Memory transfer representation for MchanDMA %s",operatorRepresentation)
 
         return operatorRepresentation
