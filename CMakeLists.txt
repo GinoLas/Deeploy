@@ -178,7 +178,7 @@ if(platform STREQUAL QEMU-ARM)
 
 endif()
 
-if(platform STREQUAL Siracusa OR platform STREQUAL Siracusa_w_neureka OR platform STREQUAL PULPOpen or platform STREQUAL AlSaQr)
+if(platform STREQUAL Siracusa OR platform STREQUAL Siracusa_w_neureka OR platform STREQUAL PULPOpen OR platform STREQUAL AlSaQr)
 
   if(TOOLCHAIN STREQUAL LLVM)
     set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_LIST_DIR}/cmake/pulp/toolchain_llvm.cmake)
