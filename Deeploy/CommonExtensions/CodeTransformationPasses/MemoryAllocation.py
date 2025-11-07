@@ -11,6 +11,9 @@ from Deeploy.CommonExtensions.CodeTransformationPasses.IntrospectiveCodeTransfor
 from Deeploy.DeeployTypes import CodeGenVerbosity, CodeTransformationPass, ExecutionBlock, NetworkContext, \
     NodeTemplate, StructBuffer, TransientBuffer, VariableBuffer, _NoVerbosity, _ReferenceBuffer
 
+from Deeploy.Logging import DEFAULT_LOGGER as log
+from Deeploy.Logging import FAILURE_MARK, SUCCESS_MARK
+
 
 class _ArgStructAllocateTemplate(NodeTemplate):
 
@@ -120,6 +123,7 @@ class MemoryManagementGeneration(CodeTransformationPass, IntrospectiveCodeTransf
 
         # We have to allocate the output buffers, unless they are global
         for buffer in reversed(self.topologicallySortBuffers(outputs + transients)):
+            log.info("Allocating buffer %s",buffer)
             assert buffer._live == False, f"Tried to allocate already live buffer {buffer.name}"
             buffer._live = True
 
@@ -138,6 +142,7 @@ class MemoryManagementGeneration(CodeTransformationPass, IntrospectiveCodeTransf
                 ctxt._maxDynamicSize[levels] = max(ctxt._maxDynamicSize.get(levels, 0), ctxt._dynamicSize[levels])
 
         for buffer in inputs + transients:
+            log.info("Deallocating %s",buffer)
             assert buffer._live == True, f"Tried to deallocate already dead buffer {buffer.name}"
             buffer._live = False
             # Don't deallocate if it's an alias of a live buffer
@@ -182,6 +187,8 @@ class MemoryPassthroughGeneration(MemoryManagementGeneration):
             else:
                 ctxt._dynamicSize[memoryLevel] += int(buffer.sizeInBytes())
 
+            log.info("Allocating buffer %s",buffer)
+
             buffer._live = True
 
         for levels in ctxt._dynamicSize.keys():
@@ -198,7 +205,7 @@ class MemoryPassthroughGeneration(MemoryManagementGeneration):
                 ctxt._dynamicSize[memoryLevel] = 0
             else:
                 ctxt._dynamicSize[memoryLevel] -= int(buffer.sizeInBytes())
-
+            log.info("Deallocating buffer %s",buffer)
             buffer._live = False
 
         return ctxt, executionBlock

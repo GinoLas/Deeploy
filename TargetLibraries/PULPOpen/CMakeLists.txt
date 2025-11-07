@@ -51,7 +51,7 @@ target_sources(deeploypulp INTERFACE $<TARGET_OBJECTS:pulp-sdk>)
 
 set(PULP_NNX_PLATFORMS "Siracusa;Siracusa_w_neureka;AlSaQr")
 if (platform IN_LIST PULP_NNX_PLATFORMS)
-  if (platform STREQUAL "Siracusa" OR platform STREQUAL "Siracusa_w_neureka")
+  if (platform STREQUAL "Siracusa" OR platform STREQUAL "Siracusa_w_neureka" OR platform STREQUAL "AlSaQr")
     set(USE_NEUREKA ON)
   else()
     message(FATAL_ERROR "Missing accelerator flags for platform ${platform}")

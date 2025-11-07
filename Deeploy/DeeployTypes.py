@@ -3494,9 +3494,7 @@ class NetworkDeployer(NetworkContainer):
         self.graph = self.lower(self.graph)  # This lowers the graph to a deployable format
 
         #Dummy nodes insertion 
-
-        """
-
+        
         new_graph_nodes = []
 
         for node in self.graph.nodes:
@@ -3527,7 +3525,7 @@ class NetworkDeployer(NetworkContainer):
 
         self.graph.nodes = new_graph_nodes
 
-        """
+        
 
 
         """

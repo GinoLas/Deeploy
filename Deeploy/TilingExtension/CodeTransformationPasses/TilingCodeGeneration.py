@@ -7,6 +7,9 @@ import math
 from abc import abstractmethod
 from typing import List, Optional, Tuple, TypeVar
 
+from Deeploy.Logging import DEFAULT_LOGGER as log
+from Deeploy.Logging import FAILURE_MARK, SUCCESS_MARK
+
 import numpy as np
 
 from Deeploy.CommonExtensions.CodeTransformationPasses.Closure import ClosureExecutionBlock
@@ -137,7 +140,9 @@ class TilingCodeGeneration(CodeTransformationPass, IntrospectiveCodeTransformati
             template = self._relativeOffsetReferenceUpdateTemplate
         else:
             relativeOffsets.append(0)  # To have the same length as the number of tiles
+            log.info("Hoisting buffer :  %s",buffer)
             buffer = self._hoistValues(ctxt, f'{tensorName}_relativeOffset', relativeOffsets)
+            log.info("Hoisted buffer :  %s",buffer)
             operatorRepresentation["relativeOffset"] = buffer.name
             operatorRepresentation["tileIdxVar"] = tileIdxVar
             template = self._relativeOffsetReferenceUpdateTiledTemplate
