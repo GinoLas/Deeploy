@@ -19,7 +19,7 @@ from Deeploy.Targets.Generic.Templates import AddTemplate, ConcatTemplate, Dequa
 from Deeploy.Targets.Generic.TypeCheckers import AddChecker, ConcatChecker, ConvChecker, DequantChecker, \
     GatherChecker, GELUChecker, GEMMChecker, HardswishChecker, LayerNormChecker, MatMulChecker, MulChecker, \
     QuantChecker, ReduceMeanChecker, ReluChecker, ReshapeChecker, RQAddChecker, RQHardswishChecker, SGDChecker, \
-    SliceChecker, SoftmaxChecker, SoftmaxCrossEntropyLossChecker, TransposeChecker
+    SliceChecker, SoftmaxChecker, SoftmaxCrossEntropyLossChecker, TransposeChecker, CryptoChecker
 from Deeploy.Targets.PULPOpen.CodeTransformationPasses.PULPClusterSynch import PULPSynchCoresPass
 from Deeploy.Targets.PULPOpen.CodeTransformationPasses.PULPClusterTiling import PULPClusterTiling
 from Deeploy.Targets.PULPOpen.CodeTransformationPasses.PULPL3Tiling import PULPL3Tiling
@@ -32,7 +32,7 @@ from Deeploy.Targets.PULPOpen.Templates import ConvTemplate, FloatAddTemplate, F
     FloatReluTemplate, FloatSoftmaxTemplate, GEMMTemplate, MatrixVectorTemplate, MaxPool2DTemplate, MulTemplate, \
     ReduceMeanTemplate, RequantShiftTemplate, ReshapeTemplate, RQAddTemplate, RQSiHardswishTemplate, SGDTemplate, \
     SliceTemplate, SoftmaxCrossEntropyLossTemplate, TallGEMMTemplate, TransposeTemplate, UniformRequantShiftTemplate, \
-    iRMSNormTemplate, iSoftmaxTemplate
+    iRMSNormTemplate, iSoftmaxTemplate, CryptoTemplate
 from Deeploy.Targets.PULPOpen.TypeCheckers import PULPConvChecker, PULPLinearChecker, PULPMaxPoolChecker, \
     PULPRequantShiftChecker
 from Deeploy.TilingExtension.CodeTransformationPasses.TilingVariableReplacement import TilingVariableReplacement, \
@@ -176,6 +176,15 @@ PULPAddBindings = [
 ] + [
     NodeBinding(AddChecker([PointerClass(float32_t), PointerClass(float32_t)], [PointerClass(float32_t)]),
                 FloatAddTemplate.referenceTemplate, ForkTransformer)
+]
+
+#CRYPTO
+#CryptoBindings attualmente configurato solo per valori interi
+#essendo per ora un nodo dummy il tipo in output deve essere uguale al tipo in input
+PULPCryptoBindings = [
+    NodeBinding(CryptoChecker([PointerClass(type)], [PointerClass(type)]),
+                CryptoTemplate.referenceTemplate, ForkTransformer)
+    for type in IntegerDataTypes
 ]
 
 PULPRQSConv2DBindings = [

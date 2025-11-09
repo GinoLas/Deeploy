@@ -5,6 +5,8 @@
 import copy
 
 from Deeploy.Targets.Generic.TileConstraints.AddTileConstraint import AddTileConstraint
+#CRYPTO
+from Deeploy.Targets.Generic.TileConstraints.CryptoTileConstraint import CryptoTileConstraint
 from Deeploy.Targets.Generic.TileConstraints.ConcatTileConstraint import ConcatTileConstraint
 from Deeploy.Targets.Generic.TileConstraints.iHardswishTileConstraint import iHardswishTileConstraint
 from Deeploy.Targets.Generic.TileConstraints.iRMSNormTileConstraint import iRMSNormTileConstraint
@@ -22,7 +24,7 @@ from Deeploy.Targets.PULPOpen.Bindings import PULPAddBindings, PULPConcatBinding
     PULPRQSConv2DBindings, PULPRQSDWConv2DBindings, PULPRQSGEMMBindings, PULPRQSiHardswishBindings, \
     PULPRQSMatrixVecBindings, PULPRQSTallGEMMBindings, PULPSGDBindings, PULPSoftmaxBindings, \
     PULPSoftmaxCrossEntropyLossBindings, PULPSoftmaxCrossEntropyLossGradBindings, PULPSoftmaxGradBindings, \
-    PULPTransposeBindings, PULPUniformRQSBindings
+    PULPTransposeBindings, PULPUniformRQSBindings, PULPCryptoBindings
 from Deeploy.Targets.PULPOpen.TileConstraints.ConvTileConstraint import Conv2DTileConstraint, RQConv2DTileConstraint
 from Deeploy.Targets.PULPOpen.TileConstraints.DWConvTileConstraint import DWConv2DTileConstraint
 from Deeploy.Targets.PULPOpen.TileConstraints.GatherTileConstraint import GatherTileConstraint
@@ -89,6 +91,10 @@ PULPTransposeTilingReadyBindings = TilingReadyNodeBindings(nodeBindings = PULPTr
 
 PULPAddTilingReadyBindings = TilingReadyNodeBindings(nodeBindings = PULPAddBindings,
                                                      tileConstraint = AddTileConstraint())
+
+#CRYPTO
+PULPCryptoTilingReadyBindings = TilingReadyNodeBindings(nodeBindings = PULPCryptoBindings,
+                                                     tileConstraint = CryptoTileConstraint())
 
 PULPSoftmaxTilingReadyBindings = TilingReadyNodeBindings(nodeBindings = PULPSoftmaxBindings,
                                                          tileConstraint = iSoftmaxTileConstraint())
