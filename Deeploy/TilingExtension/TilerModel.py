@@ -161,7 +161,8 @@ class TilerModel():
         For each tensor in the given list, add a variable equal to the product of dimension variables of this tensor.
         Namespace of those new variables are f"{tensor.name}_num_elements".
         '''
-
+        #CRYPTO: commenting function body
+        '''
         varNameNumElt = f"{tensorName}_num_elements" + self._getSuffix(copyIdx)
         if varNameNumElt in self._variables:
             return
@@ -180,7 +181,7 @@ class TilerModel():
                                                 upperBound = np.prod(tensor.shape))
 
         self._model.Add(tensorDimProductVar == tensorDimProductExpr)
-
+        '''
     def addTransientBufferSizeToModel(self, tensorName: str, memorySizeExpr: Union[IntExpr, IntVar, int]) -> IntVar:
 
         transientName = tensorName
