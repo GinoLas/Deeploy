@@ -1,4 +1,5 @@
 from Deeploy.DeeployTypes import NodeTemplate
+from Deeploy.Targets.Generic.Templates.CryptoTemplate import _CryptoTemplate
 
 ''' (pasted from FloatAddTemplate)
 referenceTemplate = NodeTemplate("""
@@ -25,25 +26,30 @@ for (; i < ${nodeName}_chunk_stop; i++) {
 """)
 '''
 
-referenceTemplate = NodeTemplate("""
+referenceTemplate = _CryptoTemplate("""
 // Crypto Node (Name: ${nodeName}, Op: ${nodeOp})
+uint32_t i = 0;
 int8_t ${nodeName}_core_id = pi_core_id();
 int8_t ${nodeName}_log2Core = log2(NUM_CORES);
 int16_t ${nodeName}_chunk = (${size} >> ${nodeName}_log2Core) + ((${size} & (NUM_CORES-1))!=0);
 int16_t ${nodeName}_chunk_start = MIN(${nodeName}_chunk*${nodeName}_core_id, ${size});
 int16_t ${nodeName}_chunk_stop = MIN(${nodeName}_chunk_start + ${nodeName}_chunk, ${size});
-
+                                 
+BEGIN_SINGLE_CORE
 printf("### CRYPTO DEBUG INIT ###");
 printf("CORE_ID: %d", ${nodeName}_core_id);
-printf("LOG2_CORE: %d", ${nodeName}_log2core);      
+//printf("LOG2_CORE: %d", ${nodeName}_log2core);      
 printf("CHUNK: %d", ${nodeName}_chunk);                           
 printf("CHUNK_START: %d", ${nodeName}_chunk_start);
 printf("CHUNK_STOP: %d", ${nodeName}_chunk_stop);
 printf("### CRYPTO DEBUG END ###");
-                                
+                                 
+fprintf(1,"HI I AM A CRYPTO NODE LOOK AT ME");
+                                                                 
                                                                   
-printf("WITHOUT loop unrolling...")
+printf("WITHOUT loop unrolling...");
 for (; i < ${size}; i++) {
-    ${data_out}[i] = ${data_in_1}[i];
+    ${data_out}[i] = ${data_in}[i];
 }
+END_SINGLE_CORE
 """)

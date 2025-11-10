@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from .BOPTileConstraint import BOPTileConstraint
+from .UnaryTileConstraint import UnaryTileConstraint
 
 
-class CryptoTileConstraint(BOPTileConstraint):
+class CryptoTileConstraint(UnaryTileConstraint):
     pass

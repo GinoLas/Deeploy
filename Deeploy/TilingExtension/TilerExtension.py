@@ -12,6 +12,8 @@ import os
 import subprocess
 from typing import Dict, List, Literal, Optional, OrderedDict, Tuple, Type, Union
 
+import Deeploy.Targets.Generic.TileConstraints.CryptoTileConstraint
+
 import numpy as np
 import onnx_graphsurgeon as gs
 import plotly.graph_objects as go
@@ -367,8 +369,11 @@ class Tiler():
                 wrapSchedule.append(entry)
 
         tilerModel = TilerModel(searchStrategy = self.searchStrategy)
+        log.info("---Setting up geometric contraints...")
         tilerModel = self._setupGeometricConstraints(tilerModel, ctxt, wrapSchedule, layerBinding)
+        log.info("---Setting up tensor dimension products...")
         tilerModel = self._setupTensorDimensionProducts(tilerModel, ctxt, wrapSchedule)
+        log.info("---Setting up heuristics...")
         tilerModel = self._setupHeuristics(tilerModel, ctxt, wrapSchedule)
         tilerModel, allSymbolicMemoryConstraints = self._setupMemoryConstraints(tilerModel, ctxt, wrapSchedule,
                                                                                 layerBinding, targetMemoryLevelMapping)
@@ -495,6 +500,8 @@ class Tiler():
                 if not ctxt.lookup(tensor.name)._deploy:
                     continue
 
+                log.info("Adding tensor number of elements for %s",tensor)
+
                 tilerModel.addTensorNumOfEltToModel(ctxt, tensor.name, idx)
 
         return tilerModel
@@ -514,12 +521,16 @@ class Tiler():
                 if node.name not in layerBinding.keys():
                     continue
 
+                #log.info("Layer binding : %s",layerBinding)
+
                 #CRYPTO: temporary solution (skip)
-                if 'Crypto' in node.name:
-                    continue
+                #if 'Crypto' in node.name:
+                #    continue
 
                 parseDict = layerBinding[node.name].mapper.parser.operatorRepresentation
                 template = layerBinding[node.name].mapper.binder.template
+
+                log.info("TEAMPLATE : %s",vars(template))
 
                 tilerModel = template.tileConstraint.addGeometricalConstraint(tilerModel,
                                                                               parseDict = parseDict,
@@ -530,15 +541,14 @@ class Tiler():
         return tilerModel
 
     def _setupHeuristics(self, tilerModel: TilerModel, ctxt: NetworkContext, schedule: List[SubGraph]) -> TilerModel:
-
         for idx, pattern in enumerate(schedule):
 
             patternTensorList = []
             seenTensorNameList = []
             for node in pattern:
                 #CRYPTO: temporary solution (skip)
-                if 'Crypto' in node.name:
-                    continue
+                #if 'Crypto' in node.name:
+                #    continue
                 
                 for gsTensor in node.inputs + node.outputs:
                     ctxtTensor = ctxt.lookup(gsTensor.name)

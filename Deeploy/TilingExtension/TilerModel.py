@@ -61,7 +61,6 @@ class TilerModel():
         return self._collector.Value(self._collector.SolutionCount() - 1, var)
 
     def _addVariable(self, name: str, lowerBound: int, upperBound: int) -> IntVar:
-
         assert name not in self._variables.keys(), \
             f"Error while adding {name} variable in {self}, variable already exists."
 
@@ -120,7 +119,6 @@ class TilerModel():
                 self._memoryConstraints.append((memoryLevel, constraintExpression))
 
     def addVariable(self, name: str, lowerBound: int, upperBound: int, copyIdx: Optional[int] = None) -> IntVar:
-
         varName = name + self._getSuffix(copyIdx)
         return self._addVariable(varName, lowerBound, upperBound)
 
@@ -136,16 +134,7 @@ class TilerModel():
 
     def getTensorNumberOfEltVar(self, tensorName: str, copyIdx: Optional[int] = None):
 
-        log.info("Variables in the model:")
-
-        for var in self._variables:
-            log.info("\t%s",var)
-
-        log.info("Number of elt??? for :%s",tensorName)
-
         varName = f"{tensorName}_num_elements" + self._getSuffix(copyIdx)
-
-        log.info("Variable name %s",varName)
 
         return self._variables[varName]
 
@@ -154,6 +143,7 @@ class TilerModel():
         Add every dimensions of an unseen tensors in the given list as Integer Variable of the Model and the context.
         Namespace of added variables is: f"{tensor.name}_dim_{idx}".
         '''
+
         tensor = ctxt.lookup(tensorName)
 
         for idx, dim in enumerate(tensor.shape):
@@ -171,18 +161,21 @@ class TilerModel():
         Namespace of those new variables are f"{tensor.name}_num_elements".
         '''
         #CRYPTO: commenting function body
-        '''
+        
         varNameNumElt = f"{tensorName}_num_elements" + self._getSuffix(copyIdx)
         if varNameNumElt in self._variables:
             return
 
         tensor = ctxt.lookup(tensorName)
 
+        log.info("tensor shape= %s",tensor.shape)
+
         tensorDimProductExpr = 1
 
         for idx, _ in enumerate(tensor.shape):
 
             varNameIdx = f"{tensor.name}_dim_{idx}" + self._getSuffix(copyIdx)
+            log.info("varNameIdx %s",varNameIdx)
             tensorDimProductExpr *= self._variables[varNameIdx]
 
         tensorDimProductVar = self._addVariable(name = varNameNumElt,
@@ -190,9 +183,8 @@ class TilerModel():
                                                 upperBound = np.prod(tensor.shape))
 
         self._model.Add(tensorDimProductVar == tensorDimProductExpr)
-        '''
+        
     def addTransientBufferSizeToModel(self, tensorName: str, memorySizeExpr: Union[IntExpr, IntVar, int]) -> IntVar:
-
         transientName = tensorName
 
         if isinstance(memorySizeExpr, int):
@@ -262,6 +254,7 @@ class TilerModel():
 
         for constraint in self._constraints:
             if self._model.CheckConstraint(constraint):
+                log.info("CIAOCIAOCIAOCIAOCIAO")
                 self._model.Add(constraint)
                 continue
 

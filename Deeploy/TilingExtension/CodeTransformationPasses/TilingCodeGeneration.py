@@ -234,6 +234,8 @@ Old minOuterShape produced by outerDims: {outerShape} and rects:
             node for node in baseExecutionBlock.codeSnippets if hasattr(node.template, 'tileConstraint')
         ]
 
+        log.info("PossibleTemplateNodes : %s",possibleTemplateNodes)
+
         assert len(possibleTemplateNodes) == 1, "More than one template node with TCF found"
 
         templateNode = possibleTemplateNodes[0]

@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from Deeploy.Targets.Generic.Bindings import BasicAddBindings, BasicConcatBindings, BasicReshapeBindings, \
+from Deeploy.Targets.Generic.Bindings import BasicAddBindings, BasicConcatBindings, BasicReshapeBindings,BasicCryptoBindings, \
     BasicTransposeBindings
 from Deeploy.Targets.Generic.TileConstraints.AddTileConstraint import AddTileConstraint
 from Deeploy.Targets.Generic.TileConstraints.ConcatTileConstraint import ConcatTileConstraint
 from Deeploy.Targets.Generic.TileConstraints.NOPTileConstraint import NOPTileConstraint
 from Deeploy.Targets.Generic.TileConstraints.TransposeTileConstraint import TransposeTileConstraint
 from Deeploy.TilingExtension.TilerExtension import TilingReadyNodeBindings
+
 
 BasicTransposeTilingReadyBindings = TilingReadyNodeBindings(nodeBindings = BasicTransposeBindings,
                                                             tileConstraint = TransposeTileConstraint())
@@ -17,6 +18,9 @@ BasicFlattenTilingReadyBindings = TilingReadyNodeBindings(nodeBindings = BasicRe
                                                           tileConstraint = NOPTileConstraint())
 
 BasicAddTilingReadyBindings = TilingReadyNodeBindings(nodeBindings = BasicAddBindings,
+                                                      tileConstraint = AddTileConstraint())
+
+BasicCryptoTilingReadyBindings = TilingReadyNodeBindings(nodeBindings = BasicCryptoBindings,
                                                       tileConstraint = AddTileConstraint())
 
 BasicConcatTilingReadyBinding = TilingReadyNodeBindings(nodeBindings = BasicConcatBindings,

@@ -94,7 +94,6 @@ int main(void) {
 #ifndef CI
   printf("Input copied\r\n");
 #endif
-
   pi_cluster_task(&cluster_task, RunNetwork, NULL);
   cluster_task.stack_size = MAINSTACKSIZE;
   cluster_task.slave_stack_size = SLAVESTACKSIZE;
