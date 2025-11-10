@@ -211,10 +211,14 @@ Old minOuterShape produced by outerDims: {outerShape} and rects:
               executionBlock: ExecutionBlock,
               name: str,
               verbose: CodeGenVerbosity = _NoVerbosity) -> Tuple[NetworkContext, ExecutionBlock]:
+        
+        log.info("Applying execution block %s",executionBlock.__dict__)
+        
         if isinstance(executionBlock, ClosureExecutionBlock):
             baseExecutionBlock = executionBlock.baseBlock
         else:
             baseExecutionBlock = executionBlock
+            
 
         patternMemoryConstraint = baseExecutionBlock.patternMemoryConstraint
 

@@ -136,7 +136,16 @@ class TilerModel():
 
     def getTensorNumberOfEltVar(self, tensorName: str, copyIdx: Optional[int] = None):
 
+        log.info("Variables in the model:")
+
+        for var in self._variables:
+            log.info("\t%s",var)
+
+        log.info("Number of elt??? for :%s",tensorName)
+
         varName = f"{tensorName}_num_elements" + self._getSuffix(copyIdx)
+
+        log.info("Variable name %s",varName)
 
         return self._variables[varName]
 

@@ -120,10 +120,17 @@ class MemoryManagementGeneration(CodeTransformationPass, IntrospectiveCodeTransf
         transients = [buff for buff in memoryLevelBuffers if self.is_transient(buff, name)]
         outputs = [buff for buff in memoryLevelBuffers if self.is_output(buff, name)]
         inputs = [buff for buff in memoryLevelBuffers if self.is_final_input(buff, name)]
+        #log.info("Context : %s",ctxt)
+        log.info("Transients:")
+        for trans in transients :
+            log.info("\t%s",trans)
 
+        log.info("Outputs:")
+        for out in outputs :
+            log.info("\t%s",out)
         # We have to allocate the output buffers, unless they are global
         for buffer in reversed(self.topologicallySortBuffers(outputs + transients)):
-            log.info("Allocating buffer %s",buffer)
+            log.info("%s Setting buffer %s as live",SUCCESS_MARK,buffer)
             assert buffer._live == False, f"Tried to allocate already live buffer {buffer.name}"
             buffer._live = True
 
@@ -142,7 +149,7 @@ class MemoryManagementGeneration(CodeTransformationPass, IntrospectiveCodeTransf
                 ctxt._maxDynamicSize[levels] = max(ctxt._maxDynamicSize.get(levels, 0), ctxt._dynamicSize[levels])
 
         for buffer in inputs + transients:
-            log.info("Deallocating %s",buffer)
+            log.info(" %s Setting buffer %s as dead",FAILURE_MARK,buffer)
             assert buffer._live == True, f"Tried to deallocate already dead buffer {buffer.name}"
             buffer._live = False
             # Don't deallocate if it's an alias of a live buffer
@@ -187,7 +194,7 @@ class MemoryPassthroughGeneration(MemoryManagementGeneration):
             else:
                 ctxt._dynamicSize[memoryLevel] += int(buffer.sizeInBytes())
 
-            log.info("Allocating buffer %s",buffer)
+            log.info("Setting buffer %s as alive",buffer)
 
             buffer._live = True
 
@@ -205,7 +212,7 @@ class MemoryPassthroughGeneration(MemoryManagementGeneration):
                 ctxt._dynamicSize[memoryLevel] = 0
             else:
                 ctxt._dynamicSize[memoryLevel] -= int(buffer.sizeInBytes())
-            log.info("Deallocating buffer %s",buffer)
+            log.info("Setting bufffer %s as dead",buffer)
             buffer._live = False
 
         return ctxt, executionBlock
