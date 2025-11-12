@@ -100,6 +100,7 @@ int main(void) {
   ResetTimer();
   StartTimer();
   pi_cluster_send_task_to_cl(&cluster_dev, &cluster_task);
+  printf("%.*s", log2_index, log2_buffer);
   StopTimer();
 
 #ifndef CI
