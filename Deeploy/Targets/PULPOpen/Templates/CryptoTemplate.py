@@ -36,18 +36,18 @@ int16_t ${nodeName}_chunk_start = MIN(${nodeName}_chunk*${nodeName}_core_id, ${s
 int16_t ${nodeName}_chunk_stop = MIN(${nodeName}_chunk_start + ${nodeName}_chunk, ${size});
                                  
 BEGIN_SINGLE_CORE
-printf("### CRYPTO DEBUG INIT ###");
-printf("CORE_ID: %d", ${nodeName}_core_id);
+printf("### CRYPTO DEBUG INIT ###\\r\\n");
+//printf("CORE_ID: %d", ${nodeName}_core_id);
 //printf("LOG2_CORE: %d", ${nodeName}_log2core);      
-printf("CHUNK: %d", ${nodeName}_chunk);                           
-printf("CHUNK_START: %d", ${nodeName}_chunk_start);
-printf("CHUNK_STOP: %d", ${nodeName}_chunk_stop);
-printf("### CRYPTO DEBUG END ###");
+//printf("CHUNK: %d", ${nodeName}_chunk);                           
+//printf("CHUNK_START: %d", ${nodeName}_chunk_start);
+//printf("CHUNK_STOP: %d", ${nodeName}_chunk_stop);
+printf("### CRYPTO DEBUG END ###\\r\\n");
                                  
-fprintf(1,"HI I AM A CRYPTO NODE LOOK AT ME");
+//fprintf(1,"HI I AM A CRYPTO NODE LOOK AT ME");
                                                                  
                                                                   
-printf("WITHOUT loop unrolling...");
+//printf("WITHOUT loop unrolling...");
 for (; i < ${size}; i++) {
     ${data_out}[i] = ${data_in}[i];
 }
